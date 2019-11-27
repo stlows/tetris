@@ -52,7 +52,7 @@ export default {
         instantDrop: "Space"
       },
       delay: 500,
-      intervalId: 0, 
+      intervalId: 0,
       cellSize: 30,
       basePieces: [
         [{ x: 0, y: 0 }, { x: 0, y: 1 }, git { x: 0, y: 2 }, { x: 0, y: 3 }],
