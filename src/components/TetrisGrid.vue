@@ -14,18 +14,29 @@
           />
         </template>
       </template>
-      <template v-for="piece in pieces">
-        <rect
-          v-for="(cell, i) in basePieces[piece.basePiece]"
-          :key="'piece_' + piece.id + '_cell_' + i"
-          :x="(piece.x+cell.x)*cellSize"
-          :y="(cell.y+piece.y)*cellSize"
-          :width="cellSize"
-          :height="cellSize"
-          :class="'pieceCell type' + piece.basePiece"
-        />
-      </template>
+
+      <rect
+        v-for="(cell, i) in basePieces[fallingPiece.basePiece]"
+        :key="'piece_' + fallingPiece.id + '_cell_' + i"
+        :x="(fallingPiece.x+cell.x)*cellSize"
+        :y="(fallingPiece.y+cell.y)*cellSize"
+        :width="cellSize"
+        :height="cellSize"
+        :class="'pieceCell type' + fallingPiece.basePiece"
+      />
+      <rect
+        v-for="(cell,i) in droppedPieces"
+        :key="'droppedPiece_' + i"
+        :x="(cell.x)*cellSize"
+        :y="(cell.y)*cellSize"
+        :width="cellSize"
+        :height="cellSize"
+        :class="'pieceCell type' + cell.basePiece"
+      />
     </svg>
+    <br />
+    <button @click="pause" v-if="intervalId">Pause</button>
+    <button @click="resume" v-if="!intervalId">Resume</button>
   </div>
 </template>
 
@@ -40,7 +51,8 @@ export default {
         down: "ArrowDown",
         instantDrop: "Space"
       },
-      delay: 2000,
+      delay: 500,
+      intervalId: 0,
       cellSize: 30,
       basePieces: [
         [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 0, y: 3 }],
@@ -51,19 +63,16 @@ export default {
         [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }],
         [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }]
       ],
-      activePieceIndex: 0,
-      pieces: []
+      fallingPiece: null,
+      droppedPieces: [{ x: 0, y: 13, basePiece: 0 }]
     };
   },
   created() {
     window.addEventListener("keydown", e => this.keyup(e));
     this.spawnNewPiece();
-    setInterval(this.moveDown, this.delay);
+    this.resume();
   },
   computed: {
-    activePiece() {
-      return this.pieces[this.activePieceIndex];
-    },
     leftWall() {
       var result = [];
       for (var y = -4; y < this.h + 4; y++) {
@@ -98,13 +107,21 @@ export default {
         this.instantDrop();
       }
     },
+    pause() {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    },
+    resume() {
+      this.intervalId = setInterval(this.moveDown, this.delay);
+    },
     spawnNewPiece() {
-      this.pieces.push({
+      this.fallingPiece = {
         id: new Date().valueOf(),
         basePiece: Math.floor(Math.random() * this.basePieces.length),
         x: 3,
         y: -1
-      });
+      };
+      console.log(this.fallingPiece.basePiece);
     },
     pieceCopy(piece) {
       return {
@@ -116,23 +133,17 @@ export default {
     },
     moveLeft() {
       if (this.checkLeft()) {
-        var copy = this.pieceCopy(this.activePiece);
-        copy.x--;
-        this.pieces.splice(this.activePieceIndex, 1, copy);
+        this.fallingPiece.x--;
       }
     },
     moveRight() {
       if (this.checkRight()) {
-        var copy = this.pieceCopy(this.activePiece);
-        copy.x++;
-        this.pieces.splice(this.activePieceIndex, 1, copy);
+        this.fallingPiece.x++;
       }
     },
     moveDown() {
       if (this.checkDown()) {
-        var copy = this.pieceCopy(this.activePiece);
-        copy.y++;
-        this.pieces.splice(this.activePieceIndex, 1, copy);
+        this.fallingPiece.y++;
       } else {
         this.pieceDropped();
       }
@@ -144,25 +155,33 @@ export default {
       this.pieceDropped();
     },
     pieceDropped() {
+      var fallingCells = this.getCells(this.fallingPiece);
+      for (var i = 0; i < fallingCells.length; i++) {
+        this.droppedPieces.push({
+          x: fallingCells[i].x,
+          y: fallingCells[i].y,
+          basePiece: this.fallingPiece.basePiece
+        });
+      }
       this.spawnNewPiece();
-      this.activePieceIndex++;
     },
     checkLeft() {
-      var pieceCells = this.getCells(this.activePiece);
+      var pieceCells = this.getCells(this.fallingPiece);
       var dropped = this.getDroppedCells();
       var obs = dropped.concat(this.leftWall);
       var pieceCellsShiftedBy = this.newCellsShiftedBy(pieceCells, -1);
       return !this.isOverlappingCells(obs, pieceCellsShiftedBy);
     },
     checkRight() {
-      var pieceCells = this.getCells(this.activePiece);
+      console.log(this.fallingPiece);
+      var pieceCells = this.getCells(this.fallingPiece);
       var dropped = this.getDroppedCells();
       var obs = dropped.concat(this.rightWall);
       var pieceCellsShiftedBy = this.newCellsShiftedBy(pieceCells, 1);
       return !this.isOverlappingCells(obs, pieceCellsShiftedBy);
     },
     checkDown() {
-      var pieceCells = this.getCells(this.activePiece);
+      var pieceCells = this.getCells(this.fallingPiece);
       var dropped = this.getDroppedCells();
       var obs = dropped.concat(this.floor);
       var pieceCellsDroppedBy = this.newCellsDroppedBy(pieceCells, 1);
@@ -195,12 +214,10 @@ export default {
       return false;
     },
     getDroppedCells() {
-      return this.pieces
-        .slice(0, this.activePieceIndex)
-        .map(p => this.getCells(p))
-        .flat();
+      return this.droppedPieces;
     },
     getCells(piece) {
+      console.log(this.fallingPiece);
       return this.basePieces[piece.basePiece].map(base => {
         return { x: piece.x + base.x, y: piece.y + base.y };
       });
