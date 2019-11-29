@@ -16,7 +16,7 @@
       </template>
 
       <rect
-        v-for="(cell, i) in basePieces[fallingPiece.basePiece]"
+        v-for="(cell, i) in basePieces[fallingPiece.basePiece][fallingPiece.rotation]"
         :key="'piece_' + fallingPiece.id + '_cell_' + i"
         :x="(fallingPiece.x+cell.x)*cellSize"
         :y="(fallingPiece.y+cell.y)*cellSize"
@@ -49,19 +49,25 @@ export default {
         left: "ArrowLeft",
         right: "ArrowRight",
         down: "ArrowDown",
+        rotate: "ArrowUp",
         instantDrop: "Space"
       },
       delay: 500,
       intervalId: 0,
       cellSize: 30,
       basePieces: [
-        [{ x: 0, y: 0 }, { x: 0, y: 1 }, git { x: 0, y: 2 }, { x: 0, y: 3 }],
-        [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }],
-        [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }],
-        [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }],
-        [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 1 }],
-        [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }],
-        [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }]
+        [
+          [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 0, y: 3 }],
+          [{ x: -2, y: 1 }, { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 }],
+          [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 0, y: 3 }],
+          [{ x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }]
+        ],
+        [[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }]],
+        [[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]],
+        [[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }]],
+        [[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 1 }]],
+        [[{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]],
+        [[{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }]]
       ],
       fallingPiece: null,
       droppedPieces: [{ x: 0, y: 13, basePiece: 0 }]
@@ -105,6 +111,8 @@ export default {
         this.moveDown();
       } else if (key.code === this.codes.instantDrop) {
         this.instantDrop();
+      } else if (key.code === this.codes.rotate) {
+        this.rotate();
       }
     },
     pause() {
@@ -117,9 +125,10 @@ export default {
     spawnNewPiece() {
       this.fallingPiece = {
         id: new Date().valueOf(),
-        basePiece: Math.floor(Math.random() * this.basePieces.length),
+        basePiece: 0, //Math.floor(Math.random() * this.basePieces.length),
         x: 3,
-        y: -1
+        y: -1,
+        rotation: 0
       };
       console.log(this.fallingPiece.basePiece);
     },
@@ -147,6 +156,9 @@ export default {
       } else {
         this.pieceDropped();
       }
+    },
+    rotate() {
+      this.fallingPiece.rotation = (this.fallingPiece.rotation + 1) % 4;
     },
     instantDrop() {
       do {
@@ -218,7 +230,7 @@ export default {
     },
     getCells(piece) {
       console.log(this.fallingPiece);
-      return this.basePieces[piece.basePiece].map(base => {
+      return this.basePieces[piece.basePiece][piece.rotation].map(base => {
         return { x: piece.x + base.x, y: piece.y + base.y };
       });
     }
