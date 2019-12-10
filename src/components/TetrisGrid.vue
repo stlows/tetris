@@ -41,6 +41,7 @@
 </template>
 
 <script>
+import BasePieces from "./BasePieces"
 export default {
   props: { w: { type: Number }, h: { type: Number } },
   data() {
@@ -55,28 +56,15 @@ export default {
       delay: 500,
       intervalId: 0,
       cellSize: 30,
-      basePieces: [
-        [
-          [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 0, y: 3 }],
-          [{ x: -2, y: 1 }, { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 }],
-          [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 0, y: 3 }],
-          [{ x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }]
-        ],
-        [[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }]],
-        [[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]],
-        [[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }]],
-        [[{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 1 }]],
-        [[{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]],
-        [[{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }]]
-      ],
+      basePieces: BasePieces,
       fallingPiece: null,
-      droppedPieces: [{ x: 0, y: 13, basePiece: 0 }]
+      droppedPieces: []
     };
   },
   created() {
     window.addEventListener("keydown", e => this.keyup(e));
     this.spawnNewPiece();
-    this.resume();
+    //this.resume();
   },
   computed: {
     leftWall() {
@@ -130,7 +118,6 @@ export default {
         y: -1,
         rotation: 0
       };
-      console.log(this.fallingPiece.basePiece);
     },
     pieceCopy(piece) {
       return {
@@ -158,7 +145,12 @@ export default {
       }
     },
     rotate() {
-      this.fallingPiece.rotation = (this.fallingPiece.rotation + 1) % 4;
+      if(this.checkRotate()){
+        this.fallingPiece.rotation = (this.fallingPiece.rotation + 1) % 4;
+      }
+    },
+    checkRotate(){
+     return true
     },
     instantDrop() {
       do {
@@ -185,7 +177,6 @@ export default {
       return !this.isOverlappingCells(obs, pieceCellsShiftedBy);
     },
     checkRight() {
-      console.log(this.fallingPiece);
       var pieceCells = this.getCells(this.fallingPiece);
       var dropped = this.getDroppedCells();
       var obs = dropped.concat(this.rightWall);
@@ -229,7 +220,6 @@ export default {
       return this.droppedPieces;
     },
     getCells(piece) {
-      console.log(this.fallingPiece);
       return this.basePieces[piece.basePiece][piece.rotation].map(base => {
         return { x: piece.x + base.x, y: piece.y + base.y };
       });
@@ -238,7 +228,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 rect {
   fill: rgba(1, 1, 46, 0.8);
 }
