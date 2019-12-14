@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="display:flex">
     <svg :width="w*cellSize" :height="h*cellSize">
       <rect :width="w*cellSize" :height="h*cellSize" />
       <template v-for="y in h">
@@ -34,14 +34,17 @@
         :class="'pieceCell type' + cell.basePiece"
       />
     </svg>
-    <br />
-    <button @click="pause" v-if="intervalId">Pause</button>
-    <button @click="resume" v-if="!intervalId">Resume</button>
+    <div>
+      <p>Lines: {{ completedLines }}</p>
+      <button @click="pause" v-if="intervalId">Pause</button>
+      <button @click="resume" v-if="!intervalId">Resume</button>
+      <button @click="restart">Restart</button>
+    </div>
   </div>
 </template>
 
 <script>
-import BasePieces from "./BasePieces"
+import BasePieces from "./BasePieces";
 export default {
   props: { w: { type: Number }, h: { type: Number } },
   data() {
@@ -58,13 +61,16 @@ export default {
       cellSize: 30,
       basePieces: BasePieces,
       fallingPiece: null,
-      droppedPieces: []
+      droppedPieces: [],
+      completedLines: 0
     };
   },
   created() {
-    window.addEventListener("keydown", e => this.keyup(e));
+    window.addEventListener("keydown", e => {
+      this.keyup(e);
+    });
     this.spawnNewPiece();
-    //this.resume();
+    this.resume();
   },
   computed: {
     leftWall() {
@@ -90,16 +96,21 @@ export default {
     }
   },
   methods: {
-    keyup(key) {
-      if (key.code === this.codes.left) {
+    keyup(e) {
+      if (e.code === this.codes.left) {
+        e.preventDefault();
         this.moveLeft();
-      } else if (key.code === this.codes.right) {
+      } else if (e.code === this.codes.right) {
+        e.preventDefault();
         this.moveRight();
-      } else if (key.code === this.codes.down) {
+      } else if (e.code === this.codes.down) {
+        e.preventDefault();
         this.moveDown();
-      } else if (key.code === this.codes.instantDrop) {
+      } else if (e.code === this.codes.instantDrop) {
+        e.preventDefault();
         this.instantDrop();
-      } else if (key.code === this.codes.rotate) {
+      } else if (e.code === this.codes.rotate) {
+        e.preventDefault();
         this.rotate();
       }
     },
@@ -110,10 +121,13 @@ export default {
     resume() {
       this.intervalId = setInterval(this.moveDown, this.delay);
     },
+    restart() {
+      this.droppedPieces = [];
+    },
     spawnNewPiece() {
       this.fallingPiece = {
         id: new Date().valueOf(),
-        basePiece: 0, //Math.floor(Math.random() * this.basePieces.length),
+        basePiece: Math.floor(Math.random() * this.basePieces.length),
         x: 3,
         y: -1,
         rotation: 0
@@ -145,12 +159,12 @@ export default {
       }
     },
     rotate() {
-      if(this.checkRotate()){
+      if (this.checkRotate()) {
         this.fallingPiece.rotation = (this.fallingPiece.rotation + 1) % 4;
       }
     },
-    checkRotate(){
-     return true
+    checkRotate() {
+      return true;
     },
     instantDrop() {
       do {
@@ -167,7 +181,30 @@ export default {
           basePiece: this.fallingPiece.basePiece
         });
       }
+      this.checkCompletedRow();
       this.spawnNewPiece();
+    },
+    checkCompletedRow() {
+      for (var y = this.h - 1; y >= 0; y--) {
+        var piecesDroppedOnline = this.droppedPieces.filter(p => p.y === y);
+        if (piecesDroppedOnline.length === this.w) {
+          this.completedLines++;
+          // this.droppedPieces = this.droppedPieces.map(p => {
+          //   if (p.y === y) {
+          //     p.basePiece = 7;
+          //   }
+          //   return p;
+          // });
+          this.droppedPieces = this.droppedPieces.filter(p => p.y !== y);
+          this.droppedPieces = this.droppedPieces.map(p => {
+            if (p.y < y) {
+              p.y++;
+              y++;
+            }
+            return p;
+          });
+        }
+      }
     },
     checkLeft() {
       var pieceCells = this.getCells(this.fallingPiece);
@@ -261,5 +298,8 @@ rect {
 }
 .type6 {
   fill: violet;
+}
+.type7 {
+  fill: gray;
 }
 </style>
