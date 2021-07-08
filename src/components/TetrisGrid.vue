@@ -39,6 +39,19 @@
       <button @click="pause" v-if="intervalId">Pause</button>
       <button @click="resume" v-if="!intervalId">Resume</button>
       <button @click="restart">Restart</button>
+      <p>Next: <svg>
+        <rect
+        v-for="(cell, i) in basePieces[bag[0]][0]"
+        :key="'next_piece_' + bag[0] + '_cell_' + i"
+        :x="(cell.x)*cellSize"
+        :y="(cell.y)*cellSize"
+        :width="cellSize"
+        :height="cellSize"
+        :class="'pieceCell type' + bag[0]"
+      />
+        </svg>
+        </p>
+      <pre>{{bag}}</pre>
     </div>
   </div>
 </template>
@@ -56,20 +69,21 @@ export default {
         rotate: "ArrowUp",
         instantDrop: "Space"
       },
-      delay: 500,
+      delay: 1000,
       intervalId: 0,
-      cellSize: 30,
+      cellSize: 40,
       basePieces: BasePieces,
       fallingPiece: null,
       droppedPieces: [],
-      completedLines: 0
+      completedLines: 0,
+      bag: []
     };
   },
   created() {
     window.addEventListener("keydown", e => {
       this.keyup(e);
     });
-    this.spawnNewPiece();
+    this.spawnNextPiece();
     this.resume();
   },
   computed: {
@@ -123,11 +137,28 @@ export default {
     },
     restart() {
       this.droppedPieces = [];
+      this.getNewBag();
+      this.fallingPiece = null;
+      this.completedLines = 0;
+
+      this.spawnNextPiece()
+      if(!this.intervalId){
+        this.resume()
+      }
     },
-    spawnNewPiece() {
+    getNewBag(){
+      this.bag = [0,1,2,3,4,5,6].map(x=> {return {x, r: Math.random()}}).sort((a,b) => {return a.r <= b.r ? -1 : 1 }).map(o => o.x)
+    },
+    spawnNextPiece(){
+      if(this.bag.length == 0){
+        this.getNewBag()
+      }
+      this.spawnNewPiece(this.bag.shift())
+    },
+    spawnNewPiece(basePiece) {
       this.fallingPiece = {
         id: new Date().valueOf(),
-        basePiece: Math.floor(Math.random() * this.basePieces.length),
+        basePiece,
         x: 3,
         y: -1,
         rotation: 0
@@ -182,7 +213,7 @@ export default {
         });
       }
       this.checkCompletedRow();
-      this.spawnNewPiece();
+      this.spawnNextPiece();
     },
     checkCompletedRow() {
       for (var y = this.h - 1; y >= 0; y--) {
@@ -282,13 +313,13 @@ rect {
   fill: aqua;
 }
 .type1 {
-  fill: orange;
+  fill: blue;
 }
 .type2 {
   fill: yellow;
 }
 .type3 {
-  fill: blue;
+  fill: orange;
 }
 .type4 {
   fill: red;
